@@ -2,34 +2,57 @@
 
 module gcf_tb;
 
-    // 1. Declare signals (Inputs are 'reg', Outputs are 'wire')
     reg clk;
+    reg reset;
     reg start;
     reg [15:0] data_in;
-    
     wire done;
-    
-    // (We will instantiate the Top Module here later)
 
-    // 2. Generate the Clock (flips every 5 nanoseconds)
+    // Instantiate the Top Module
+    GCF_Top uut (
+        .clk(clk),
+        .reset(reset),
+        .start(start),
+        .data_in(data_in),
+        .done(done)
+    );
+
+    // Generate a clock (10ns period)
     always #5 clk = ~clk;
 
-    // 3. The actual test sequence
     initial begin
-        // --- GTKWAVE SETUP ---
-        $dumpfile("gcf_sim.vcd");    // Names the output file
-        $dumpvars(0, gcf_tb);        // Tells GTKWave to track EVERYTHING in this testbench
-        // ---------------------
+        // GTKWave Setup
+        $dumpfile("gcf_sim.vcd");
+        $dumpvars(0, gcf_tb);
 
-        // Initialize signals
+        // 1. Initialize System
         clk = 0;
+        reset = 1;
         start = 0;
         data_in = 0;
 
-        // (We will add the actual GCF test inputs here later)
+        // 2. Release Reset
+        #10 reset = 0;
 
-        // Stop the simulation after enough time has passed
-        #1000; 
+        // 3. Pulse the Start button
+        #10 start = 1;
+
+        // 4. Feed Input A (Wait for FSM to enter State 1)
+        #10 data_in = 16'd24; 
+
+        // 5. Feed Input B (Wait for FSM to enter State 2)
+        #10 data_in = 16'd36; 
+        
+        // Turn off start switch so it doesn't loop infinitely
+        #10 start = 0;        
+
+        // 6. Wait for the 'done' signal to go HIGH
+        wait(done == 1);
+        
+        // Let it run for just a tiny bit longer to see the final result clearly
+        #20;
+        
+        $display("GCF Calculation Complete!");
         $finish;
     end
 
